@@ -13,7 +13,9 @@ listening-based debugging — ``prompt_audio`` (the clone prompt),
 ``sim_reference_audio`` (the clip SIM compared the generation against), and
 ``generated_audio`` — plus ``prompt_text``, the ASR ``transcription``,
 per-sample ``SIM`` / ``WER``, and (when ``-m sim-windowed`` is enabled)
-``wsim_mean`` / ``wsim_var`` / ``wsim_min`` / ``wsim_max`` / ``wsim_min_start``.
+``wsim_mean`` / ``wsim_var`` / ``wsim_min`` / ``wsim_max`` / ``wsim_min_start``,
+and (from the same ``sim-windowed`` pass) ``wsim_dip_count`` /
+``wsim_dips_per_min`` / ``wsim_dip_threshold``.
 """
 
 import re
@@ -115,6 +117,9 @@ class SpeechGenerationResultSink:
                 "wsim_min": Value("float32"),
                 "wsim_max": Value("float32"),
                 "wsim_min_start": Value("float32"),
+                "wsim_dip_count": Value("int32"),
+                "wsim_dips_per_min": Value("float32"),
+                "wsim_dip_threshold": Value("float32"),
             }
         )
         rows, self._buffer = self._buffer, []

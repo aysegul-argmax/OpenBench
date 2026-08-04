@@ -25,10 +25,15 @@ Configuration (via ``-mc``, using the metric alias as prefix)::
 
     -mc sim-windowed.window_seconds=8.0
     -mc sim-windowed.hop_seconds=4.0
+    -mc sim-windowed.dip_threshold=0.3  # consecutive |ΔwSIM| dip flag
     -mc sim-windowed.checkpoint=hf://.../wavlm_large_finetune.pth  # same as sim
 
 Windows shorter than ``min_window_seconds`` are only evaluated when the clip is
 too short to yield any full window (then the whole clip is one window).
+
+Dips (option A) count consecutive windows where ``|s_i - s_{i+1}| > dip_threshold``
+and report ``wsim_dip_count`` / ``wsim_dips_per_min`` (count / generated minutes)
+alongside the existing windowed aggregates — same WavLM pass, no extra embeds.
 """
 
 import librosa
@@ -54,7 +59,8 @@ class SpeechGenerationWindowedSpeakerSimilarity(SpeechGenerationSpeakerSimilarit
 
     Accepts the same constructor kwargs as plain SIM (``model_name``,
     ``checkpoint``, ``use_gpu``, ``device``) plus the windowing parameters
-    ``window_seconds`` / ``hop_seconds`` / ``min_window_seconds``.
+    ``window_seconds`` / ``hop_seconds`` / ``min_window_seconds`` and
+    ``dip_threshold`` for consecutive-window |ΔwSIM| dips.
     """
 
     def __init__(
@@ -62,14 +68,18 @@ class SpeechGenerationWindowedSpeakerSimilarity(SpeechGenerationSpeakerSimilarit
         window_seconds: float = 8.0,
         hop_seconds: float = 4.0,
         min_window_seconds: float = 2.0,
+        dip_threshold: float = 0.3,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.window_seconds = float(window_seconds)
         self.hop_seconds = float(hop_seconds)
         self.min_window_seconds = float(min_window_seconds)
+        self.dip_threshold = float(dip_threshold)
         if self.window_seconds <= 0 or self.hop_seconds <= 0:
             raise ValueError("window_seconds and hop_seconds must be positive")
+        if self.dip_threshold < 0:
+            raise ValueError("dip_threshold must be non-negative")
         # Window extremes across the whole run. Tracked outside the pyannote
         # component sums because min/max do not accumulate additively.
         self._run_window_min: float | None = None
@@ -163,12 +173,22 @@ class SpeechGenerationWindowedSpeakerSimilarity(SpeechGenerationSpeakerSimilarit
         min_start, lo = min(scored, key=lambda window: window[1])
         hi = max(scores)
 
+        # Option-A dips: consecutive windows with |ΔwSIM| above threshold.
+        dip_count = (
+            sum(1 for a, b in zip(scores, scores[1:]) if abs(a - b) > self.dip_threshold)
+            if n >= 2
+            else 0
+        )
+        duration_sec = float(librosa.get_duration(path=generated_audio))
+        dips_per_min = float(dip_count) / max(duration_sec / 60.0, 1e-9)
+
         self._run_window_min = lo if self._run_window_min is None else min(self._run_window_min, lo)
         self._run_window_max = hi if self._run_window_max is None else max(self._run_window_max, hi)
         logger.info(
             "SIM-windowed sample: mean=%.4f var=%.5f min=%.4f max=%.4f over %d windows "
-            "(window=%.1fs hop=%.1fs)",
+            "(window=%.1fs hop=%.1fs) dips=%d (%.3f/min, thr=%.2f)",
             mean, var, lo, hi, n, self.window_seconds, self.hop_seconds,
+            dip_count, dips_per_min, self.dip_threshold,
         )
 
         return {
@@ -183,6 +203,9 @@ class SpeechGenerationWindowedSpeakerSimilarity(SpeechGenerationSpeakerSimilarit
             "wsim_min": lo,
             "wsim_max": hi,
             "wsim_min_start": min_start,
+            "wsim_dip_count": float(dip_count),
+            "wsim_dips_per_min": dips_per_min,
+            "wsim_dip_threshold": self.dip_threshold,
         }
 
     def compute_metric(self, detail: Details) -> float:
