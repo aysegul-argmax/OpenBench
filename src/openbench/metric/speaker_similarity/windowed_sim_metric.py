@@ -203,9 +203,13 @@ class SpeechGenerationWindowedSpeakerSimilarity(SpeechGenerationSpeakerSimilarit
             "wsim_min": lo,
             "wsim_max": hi,
             "wsim_min_start": min_start,
+            "wsim_range": hi - lo,
             "wsim_dip_count": float(dip_count),
             "wsim_dips_per_min": dips_per_min,
             "wsim_dip_threshold": self.dip_threshold,
+            # Per-window series for offline plots (not accumulated into run totals).
+            "wsim_window_starts": [float(t) for t, _ in scored],
+            "wsim_window_scores": [float(s) for s in scores],
         }
 
     def compute_metric(self, detail: Details) -> float:

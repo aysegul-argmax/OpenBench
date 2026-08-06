@@ -239,6 +239,9 @@ class BenchmarkRunner:
         # so the parquet schema stays stable across runs that omit it.
         wsim_mean = wsim_var = wsim_min = wsim_max = wsim_min_start = None
         wsim_dip_count = wsim_dips_per_min = wsim_dip_threshold = None
+        wsim_range = None
+        wsim_window_starts = None
+        wsim_window_scores = None
         for t in task_results:
             name = self._normalize_metric_name(t.metric_name)
             if name == "sim":
@@ -258,10 +261,15 @@ class BenchmarkRunner:
                 wsim_min = detail.get("wsim_min")
                 wsim_max = detail.get("wsim_max")
                 wsim_min_start = detail.get("wsim_min_start")
+                wsim_range = detail.get("wsim_range")
+                if wsim_range is None and wsim_min is not None and wsim_max is not None:
+                    wsim_range = float(wsim_max) - float(wsim_min)
                 raw_dips = detail.get("wsim_dip_count")
                 wsim_dip_count = int(raw_dips) if raw_dips is not None else None
                 wsim_dips_per_min = detail.get("wsim_dips_per_min")
                 wsim_dip_threshold = detail.get("wsim_dip_threshold")
+                wsim_window_starts = detail.get("wsim_window_starts")
+                wsim_window_scores = detail.get("wsim_window_scores")
 
         try:
             gen_array, gen_sr = sf.read(output.prediction.audio_path, dtype="float32")
@@ -300,9 +308,12 @@ class BenchmarkRunner:
             "wsim_min": wsim_min,
             "wsim_max": wsim_max,
             "wsim_min_start": wsim_min_start,
+            "wsim_range": wsim_range,
             "wsim_dip_count": wsim_dip_count,
             "wsim_dips_per_min": wsim_dips_per_min,
             "wsim_dip_threshold": wsim_dip_threshold,
+            "wsim_window_starts": wsim_window_starts,
+            "wsim_window_scores": wsim_window_scores,
         }
 
     def _run_pipeline_on_dataset_parallel(

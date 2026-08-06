@@ -14,8 +14,9 @@ listening-based debugging — ``prompt_audio`` (the clone prompt),
 ``generated_audio`` — plus ``prompt_text``, the ASR ``transcription``,
 per-sample ``SIM`` / ``WER``, and (when ``-m sim-windowed`` is enabled)
 ``wsim_mean`` / ``wsim_var`` / ``wsim_min`` / ``wsim_max`` / ``wsim_min_start``,
-and (from the same ``sim-windowed`` pass) ``wsim_dip_count`` /
-``wsim_dips_per_min`` / ``wsim_dip_threshold``.
+and (from the same ``sim-windowed`` pass) ``wsim_range`` (max−min),
+``wsim_dip_count`` / ``wsim_dips_per_min`` / ``wsim_dip_threshold``, plus the
+per-window ``wsim_window_starts`` / ``wsim_window_scores`` series for plots.
 """
 
 import re
@@ -93,7 +94,7 @@ class SpeechGenerationResultSink:
 
         # Imported lazily so importing the runner never pulls in the (heavy)
         # datasets Audio stack unless a sink is actually used.
-        from datasets import Audio, Dataset, Features, Value
+        from datasets import Audio, Dataset, Features, Sequence, Value
 
         features = Features(
             {
@@ -117,9 +118,12 @@ class SpeechGenerationResultSink:
                 "wsim_min": Value("float32"),
                 "wsim_max": Value("float32"),
                 "wsim_min_start": Value("float32"),
+                "wsim_range": Value("float32"),
                 "wsim_dip_count": Value("int32"),
                 "wsim_dips_per_min": Value("float32"),
                 "wsim_dip_threshold": Value("float32"),
+                "wsim_window_starts": Sequence(Value("float32")),
+                "wsim_window_scores": Sequence(Value("float32")),
             }
         )
         rows, self._buffer = self._buffer, []
