@@ -86,8 +86,9 @@ class TaskResult(BaseModel):
     metric_name: str = Field(..., description="The name of the metric")
     result: float | None = Field(..., description="The result of the metric")
     # Values are usually numeric metric components, but a metric may also attach
-    # non-numeric per-sample detail (e.g. the speech-gen WER ASR transcription).
-    detailed_result: dict[str, float | str | None] = Field(
+    # non-numeric per-sample detail: the speech-gen WER ASR transcription (str) or
+    # a per-window series such as sim-windowed's wsim_window_starts/scores (list).
+    detailed_result: dict[str, float | str | list[float] | None] = Field(
         None,
         description="The detailed results of the metric i.e. breakdown by its components allowing \
         for more granular analysis",

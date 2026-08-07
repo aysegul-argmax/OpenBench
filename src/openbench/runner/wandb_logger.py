@@ -110,12 +110,16 @@ class WandbLogger(ABC, Generic[SampleResult]):
         dataset_name = task_results[0].dataset_name
         df = pd.DataFrame([task_result.model_dump() for task_result in task_results])
 
-        # Flatten detailed_result column
+        # Flatten detailed_result column. Series-valued details (e.g. sim-windowed's
+        # per-window scores) become JSON strings so the table stays scalar-celled.
+        def _cell(value):
+            return json.dumps(value) if isinstance(value, (list, tuple)) else value
+
         all_keys = set()
         for task_result in task_results:
             all_keys.update(task_result.detailed_result.keys())
         for key in all_keys:
-            df[f"detailed_{key}"] = df["detailed_result"].apply(lambda x: x.get(key, None))
+            df[f"detailed_{key}"] = df["detailed_result"].apply(lambda x: _cell(x.get(key, None)))
         df = df.drop(columns=["detailed_result"])
 
         # Store a version of the table locally
