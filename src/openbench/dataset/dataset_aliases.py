@@ -715,6 +715,51 @@ def register_dataset_aliases() -> None:
         ),
     )
 
+    # Prompt-mass identity guardrail multi-seed eval: 10 known-bad + 10 clean
+    # reflen rows (no shared recordings). Results land in
+    # argmaxinc/swift-0.6b-prompt-mass-identity-eval; compare offline to paper ACI.
+    DatasetRegistry.register_alias(
+        "prompt-mass-identity-eval",
+        DatasetConfig(
+            dataset_id="argmaxinc/reflen-sim-eval",
+            subset="default",
+            split="train",
+            include_sample_ids=frozenset(
+                {
+                    # bad 10
+                    "en_US_General_DeliveryService_1587920_channel1-ref04",
+                    "en_US_General_Agriculture_1586674_channel1-ref02",
+                    "en_US_General_Banking_1587139_channel1-ref12",
+                    "en_US_General_Banking_1586893_channel1-ref01",
+                    "en_CA_Agriculture_1586885_channel1-ref05",
+                    "en_US_Southern_Aviation_1587816_channel1-ref07",
+                    "en_US_Southern_DeliveryService_1593143_channel1-ref01",
+                    "en_US_General_Banking_1587700_channel1-ref01",
+                    "en_US_Southern_Banking_1588856_channel1-ref01",
+                    "en_US_Southern_Aviation_1593139_channel1-ref01",
+                    # good 10
+                    "en_AU_Aviation_1585418_channel1-ref03",
+                    "en_US_General_Aviation_1586157_channel1-ref11",
+                    "en_US_Southern_Agriculture_1592841_channel1-ref07",
+                    "en_CA_Aviation_1586888_channel1-ref07",
+                    "en_CA_Aviation_1590830_channel1-ref05",
+                    "en_US_Southern_DeliveryService_1588857_channel1-ref04",
+                    "en_US_General_Agriculture_1586590_channel1-ref10",
+                    "en_US_General_Entertainment_1586624_channel1-ref08",
+                    "en_US_General_Banking_1586678_channel1-ref09",
+                    "en_US_General_Banking_1584540_channel1-ref09",
+                }
+            ),
+        ),
+        supported_pipeline_types={
+            PipelineType.SPEECH_GENERATION,
+        },
+        description=(
+            "20-sample prompt-mass identity eval (10 bad identity / dip cases + 10 clean) "
+            "filtered from reflen-sim-eval for multi-seed aci-id sweeps."
+        ),
+    )
+
     # Prompt-length SIM study, hosted variant: argmaxinc/promptlen-sim-eval.
     # Fixed-length same-speaker references (30-96 s), synthesis texts swept by
     # length (`prompt_length` 22-1013 chars). Same flat voiceclone-eval schema
