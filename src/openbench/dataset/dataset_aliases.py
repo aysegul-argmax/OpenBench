@@ -860,6 +860,62 @@ def register_dataset_aliases() -> None:
             description=f"Single head-match sample {_pmhm_sid} (Studio per-seed jobs).",
         )
 
+    # FPR-first calib observe-id set (20 good + 20 bad), disjoint from eval-v2.
+    # One-sample aliases for per-(sample, seed) Mac Studio jobs.
+    for _pmc_alias, _pmc_sid in (
+        ("pmc-01", "en_US_General_Agriculture_1586590_channel1-ref09"),
+        ("pmc-02", "en_US_Southern_Aviation_1587816_channel1-ref02"),
+        ("pmc-03", "en_US_General_Agriculture_1586590_channel1-ref03"),
+        ("pmc-04", "en_US_General_DeliveryService_1587143_channel1-ref05"),
+        ("pmc-05", "en_US_Southern_Banking_1589014_channel1-ref10"),
+        ("pmc-06", "en_US_General_Agriculture_1586590_channel1-ref03"),
+        ("pmc-07", "en_US_General_DeliveryService_1587143_channel1-ref03"),
+        ("pmc-08", "en_US_General_Agriculture_1586590_channel1-ref06"),
+        ("pmc-09", "en_US_General_DeliveryService_1587143_channel1-ref09"),
+        ("pmc-10", "en_US_Southern_Banking_1589014_channel1-ref08"),
+        ("pmc-11", "en_US_General_DeliveryService_1587143_channel1-ref08"),
+        ("pmc-12", "en_US_Southern_Banking_1589014_channel1-ref04"),
+        ("pmc-13", "en_US_General_DeliveryService_1587143_channel1-ref06"),
+        ("pmc-14", "en_US_General_DeliveryService_1587143_channel1-ref04"),
+        ("pmc-15", "en_US_General_Aviation_1586677_channel1-ref01"),
+        ("pmc-16", "en_US_General_DeliveryService_1587143_channel1-ref06"),
+        ("pmc-17", "en_US_Southern_Banking_1589014_channel1-ref07"),
+        ("pmc-18", "en_US_Southern_Banking_1589014_channel1-ref02"),
+        ("pmc-19", "en_US_General_DeliveryService_1587143_channel1-ref02"),
+        ("pmc-20", "en_US_General_Banking_1586157_channel1-ref02"),
+        ("pmc-21", "en_US_General_Aviation_1587137_channel1-ref05"),
+        ("pmc-22", "en_US_General_Entertainment_1586163_channel1-ref04"),
+        ("pmc-23", "en_US_General_Entertainment_1586163_channel1-ref13"),
+        ("pmc-24", "en_US_General_DeliveryService_1587920_channel1-ref04"),
+        ("pmc-25", "en_US_General_Banking_1584540_channel1-ref01"),
+        ("pmc-26", "en_US_Southern_Banking_1588856_channel1-ref01"),
+        ("pmc-27", "en_US_General_Entertainment_1586163_channel1-ref14"),
+        ("pmc-28", "en_CN_Agriculture_1581912_channel1-ref01"),
+        ("pmc-29", "en_US_General_Banking_1586157_channel1-ref11"),
+        ("pmc-30", "en_US_General_DeliveryService_1587143_channel1-ref01"),
+        ("pmc-31", "en_US_General_Banking_1586893_channel1-ref01"),
+        ("pmc-32", "en_US_General_Aviation_1586157_channel1-ref02"),
+        ("pmc-33", "en_US_General_Aviation_1586892_channel1-ref03"),
+        ("pmc-34", "en_US_General_Banking_1587700_channel1-ref02"),
+        ("pmc-35", "en_US_General_DeliveryService_1586157_channel1-ref02"),
+        ("pmc-36", "en_US_General_Banking_1587700_channel1-ref02"),
+        ("pmc-37", "en_US_General_DeliveryService_1587920_channel1-ref01"),
+        ("pmc-38", "en_US_Southern_Banking_1593141_channel1-ref01"),
+        ("pmc-39", "en_US_Southern_DeliveryService_1592837_channel1-ref01"),
+        ("pmc-40", "en_US_General_DeliveryService_1584556_channel1-ref01"),
+    ):
+        DatasetRegistry.register_alias(
+            _pmc_alias,
+            DatasetConfig(
+                dataset_id="argmaxinc/reflen-sim-eval",
+                subset="default",
+                split="train",
+                include_sample_ids=frozenset({_pmc_sid}),
+            ),
+            supported_pipeline_types={PipelineType.SPEECH_GENERATION},
+            description=f"Single FPR-calib sample {_pmc_sid} (Studio per-seed observe-id).",
+        )
+
     # Prompt-length SIM study, hosted variant: argmaxinc/promptlen-sim-eval.
     # Fixed-length same-speaker references (30-96 s), synthesis texts swept by
     # length (`prompt_length` 22-1013 chars). Same flat voiceclone-eval schema
