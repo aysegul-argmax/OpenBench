@@ -834,6 +834,32 @@ def register_dataset_aliases() -> None:
         ),
     )
 
+    # One-sample aliases for per-(sample, seed) Mac Studio jobs (stable ids).
+    for _pmhm_alias, _pmhm_sid in (
+        ("pmhm-01", "en_US_General_Aviation_1586157_channel1-ref11"),
+        ("pmhm-02", "en_AU_Aviation_1585418_channel1-ref03"),
+        ("pmhm-03", "en_US_Southern_Agriculture_1592841_channel1-ref07"),
+        ("pmhm-04", "en_US_General_Agriculture_1586590_channel1-ref10"),
+        ("pmhm-05", "en_US_General_Banking_1584540_channel1-ref09"),
+        ("pmhm-06", "en_CA_Agriculture_1586885_channel1-ref04"),
+        ("pmhm-07", "en_CA_Agriculture_1586885_channel1-ref01"),
+        ("pmhm-08", "en_US_General_Banking_1586157_channel1-ref01"),
+        ("pmhm-09", "en_US_Southern_Banking_1589014_channel1-ref03"),
+        ("pmhm-10", "en_US_General_DeliveryService_1587920_channel1-ref04"),
+        ("pmhm-11", "en_US_General_Agriculture_1586674_channel1-ref02"),
+    ):
+        DatasetRegistry.register_alias(
+            _pmhm_alias,
+            DatasetConfig(
+                dataset_id="argmaxinc/reflen-sim-eval",
+                subset="default",
+                split="train",
+                include_sample_ids=frozenset({_pmhm_sid}),
+            ),
+            supported_pipeline_types={PipelineType.SPEECH_GENERATION},
+            description=f"Single head-match sample {_pmhm_sid} (Studio per-seed jobs).",
+        )
+
     # Prompt-length SIM study, hosted variant: argmaxinc/promptlen-sim-eval.
     # Fixed-length same-speaker references (30-96 s), synthesis texts swept by
     # length (`prompt_length` 22-1013 chars). Same flat voiceclone-eval schema
