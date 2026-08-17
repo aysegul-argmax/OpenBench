@@ -260,6 +260,13 @@ class GeneratedAudio(BaseModel):
             "(one JSON object per decoded chunk), carried into the results sink."
         ),
     )
+    prompt_mass_scan: str | None = Field(
+        None,
+        description=(
+            "Optional multi-layer prompt-mass head-scan JSONL (GUARDRAIL_PROMPTMASS_SCAN_OUT) "
+            "when prompt_mass_scan is enabled on the Swift OSS pipeline. Empty/None otherwise."
+        ),
+    )
     duration: float = Field(
         ...,
         description="Duration of the generated audio in seconds.",

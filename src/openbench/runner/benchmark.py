@@ -298,6 +298,8 @@ class BenchmarkRunner:
             "wsim_min_start": wsim_min_start,
             # Guardrail trajectory JSONL recorded by the pipeline, when available.
             "trajectory": getattr(output.prediction, "trajectory", None) or "",
+            # Multi-layer prompt-mass scan JSONL when prompt_mass_scan=true.
+            "prompt_mass_scan": getattr(output.prediction, "prompt_mass_scan", None) or "",
         }
 
     def _run_pipeline_on_dataset_parallel(

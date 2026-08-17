@@ -715,9 +715,52 @@ def register_dataset_aliases() -> None:
         ),
     )
 
-    # Prompt-mass identity guardrail multi-seed eval: 10 known-bad + 10 clean
-    # reflen rows (no shared recordings). Results land in
-    # argmaxinc/swift-0.6b-prompt-mass-identity-eval; compare offline to paper ACI.
+    # Prompt-mass identity guardrail multi-seed eval v2: chronic-bad + stable-good
+    # (paper ACI wSIM-min across seeds), disjoint from FPR-first calib. Results →
+    # argmaxinc/swift-0.6b-prompt-mass-identity-eval-v2.
+    DatasetRegistry.register_alias(
+        "prompt-mass-identity-eval-v2",
+        DatasetConfig(
+            dataset_id="argmaxinc/reflen-sim-eval",
+            subset="default",
+            split="train",
+            include_sample_ids=frozenset(
+                {
+                    # chronic-bad 10 (high fail rate under paper ACI across seeds)
+                    "en_US_Southern_Aviation_1589010_channel1-ref01",
+                    "en_US_General_Banking_1587700_channel1-ref01",
+                    "en_US_Southern_Energy_1592962_channel1-ref03",
+                    "en_CA_Agriculture_1586885_channel1-ref01",
+                    "en_CA_Aviation_1588678_channel1-ref01",
+                    "en_CA_Agriculture_1592234_channel1-ref01",
+                    "en_US_Southern_Aviation_1592844_channel1-ref01",
+                    "en_US_General_Banking_1586893_channel1-ref02",
+                    "en_US_Southern_Aviation_1593139_channel1-ref01",
+                    "en_US_General_Banking_1587139_channel1-ref12",
+                    # stable-good 10 (0 fails, mostly healthy mins)
+                    "en_US_General_Banking_1584540_channel1-ref07",
+                    "en_US_General_DeliveryService_1586682_channel1-ref04",
+                    "en_CA_Agriculture_1592234_channel1-ref02",
+                    "en_US_General_Banking_1586157_channel1-ref09",
+                    "en_US_General_Aviation_1586677_channel1-ref05",
+                    "en_US_General_Aviation_1586892_channel1-ref09",
+                    "en_US_Southern_Agriculture_1592841_channel1-ref03",
+                    "en_CN_Agriculture_1586194_channel1-ref04",
+                    "en_US_General_DeliveryService_1586157_channel1-ref03",
+                    "en_US_General_Agriculture_1586674_channel1-ref04",
+                }
+            ),
+        ),
+        supported_pipeline_types={
+            PipelineType.SPEECH_GENERATION,
+        },
+        description=(
+            "v2 prompt-mass identity eval: 10 chronic-bad + 10 stable-good reflen rows "
+            "(paper ACI outcome labels across seeds) for multi-seed aci-id sweeps."
+        ),
+    )
+
+    # v1 alias kept for reproducibility of the first (failed) multi-seed sweep.
     DatasetRegistry.register_alias(
         "prompt-mass-identity-eval",
         DatasetConfig(
@@ -726,7 +769,6 @@ def register_dataset_aliases() -> None:
             split="train",
             include_sample_ids=frozenset(
                 {
-                    # bad 10
                     "en_US_General_DeliveryService_1587920_channel1-ref04",
                     "en_US_General_Agriculture_1586674_channel1-ref02",
                     "en_US_General_Banking_1587139_channel1-ref12",
@@ -737,7 +779,6 @@ def register_dataset_aliases() -> None:
                     "en_US_General_Banking_1587700_channel1-ref01",
                     "en_US_Southern_Banking_1588856_channel1-ref01",
                     "en_US_Southern_Aviation_1593139_channel1-ref01",
-                    # good 10
                     "en_AU_Aviation_1585418_channel1-ref03",
                     "en_US_General_Aviation_1586157_channel1-ref11",
                     "en_US_Southern_Agriculture_1592841_channel1-ref07",
@@ -755,8 +796,41 @@ def register_dataset_aliases() -> None:
             PipelineType.SPEECH_GENERATION,
         },
         description=(
-            "20-sample prompt-mass identity eval (10 bad identity / dip cases + 10 clean) "
-            "filtered from reflen-sim-eval for multi-seed aci-id sweeps."
+            "v1 prompt-mass identity eval (prone+clean). Prefer prompt-mass-identity-eval-v2."
+        ),
+    )
+
+    # Head-matching set: 5 stable-good + 6 annotated-swap bad (see HANDOFF_STATUS).
+    # Per-sample paper seeds differ — dispatch with -pc seed=<n> + results_extra, or
+    # one sample per job. Used with prompt_mass_scan=true on the headscan OpenBench tip.
+    DatasetRegistry.register_alias(
+        "prompt-mass-head-match",
+        DatasetConfig(
+            dataset_id="argmaxinc/reflen-sim-eval",
+            subset="default",
+            split="train",
+            include_sample_ids=frozenset(
+                {
+                    "en_US_General_Aviation_1586157_channel1-ref11",
+                    "en_AU_Aviation_1585418_channel1-ref03",
+                    "en_US_Southern_Agriculture_1592841_channel1-ref07",
+                    "en_US_General_Agriculture_1586590_channel1-ref10",
+                    "en_US_General_Banking_1584540_channel1-ref09",
+                    "en_CA_Agriculture_1586885_channel1-ref04",
+                    "en_CA_Agriculture_1586885_channel1-ref01",
+                    "en_US_General_Banking_1586157_channel1-ref01",
+                    "en_US_Southern_Banking_1589014_channel1-ref03",
+                    "en_US_General_DeliveryService_1587920_channel1-ref04",
+                    "en_US_General_Agriculture_1586674_channel1-ref02",
+                }
+            ),
+        ),
+        supported_pipeline_types={
+            PipelineType.SPEECH_GENERATION,
+        },
+        description=(
+            "Prompt-mass head-match clips (5 good + 6 annotated-swap bad) for "
+            "multi-layer GUARDRAIL_PROMPTMASS_SCAN dumps on Mac Studios."
         ),
     )
 

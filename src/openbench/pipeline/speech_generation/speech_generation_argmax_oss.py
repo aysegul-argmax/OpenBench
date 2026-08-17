@@ -193,9 +193,8 @@ class ArgmaxOpenSourceSpeechGenerationConfig(PipelineConfig):
         default=None,
         description=(
             "--guardrails (talker_backend=mlx only): decode-time guardrail mode on builds that carry "
-            "them (berkin/voice-clone-guardrails-* heads). 'off' | 'native' | 'v2' | 'aci' (RD-691 "
-            "hard-CMask + prefill-DP; also de-pauses the reference). Omit to skip the flag entirely "
-            "for builds without it."
+            "them. 'off' | 'native' | 'v2' | 'aci' | 'aci-id' | 'observe-id' (ACI hard-CMask + "
+            "identity detector observe-only). Omit to skip the flag for builds without it."
         ),
     )
     depause_reference: bool = Field(
@@ -204,6 +203,28 @@ class ArgmaxOpenSourceSpeechGenerationConfig(PipelineConfig):
             "--depause-reference (talker_backend=mlx only): strip long silent pauses from the "
             "reference before ICL prefill. guardrails=aci already implies this; set it to de-pause "
             "on other arms."
+        ),
+    )
+    prompt_mass_scan: bool = Field(
+        default=False,
+        description=(
+            "When true, set GUARDRAIL_PROMPTMASS_SCAN_OUT per sample and upload the JSONL dump "
+            "into the HF results column `prompt_mass_scan`. Requires an oss_commit with the "
+            "head-scan AnchorProbe (e.g. aysegul/prompt-mass-headscan). Off by default so "
+            "normal Custom Vocab / multi-seed runs are unchanged."
+        ),
+    )
+    prompt_mass_scan_layers: str | None = Field(
+        default=None,
+        description=(
+            "Comma-separated talker layers to scan (GUARDRAIL_SCAN_LAYERS). None = all layers. "
+            "Head-match shortlist example: '3,4,5,6,9,11,12,16'."
+        ),
+    )
+    prompt_mass_scan_stride: int | None = Field(
+        default=None,
+        description=(
+            "Decode-step stride for the scan dump (GUARDRAIL_SCAN_STRIDE). None = CLI default (1)."
         ),
     )
 
@@ -353,11 +374,20 @@ class ArgmaxOpenSourceSpeechGenerationPipeline(Pipeline):
             # chunk); read back after generation and carry it on the prediction.
             traj_path = TEMP_TTS_AUDIO_DIR / f"{inp.audio_name}.traj.jsonl"
             traj_path.unlink(missing_ok=True)
+            scan_path = TEMP_TTS_AUDIO_DIR / f"{inp.audio_name}.pmscan.jsonl"
+            scan_path.unlink(missing_ok=True)
+            env_overrides: dict[str, str] = {"GUARDRAIL_TRAJECTORY_OUT": str(traj_path)}
+            if self.config.prompt_mass_scan:
+                env_overrides["GUARDRAIL_PROMPTMASS_SCAN_OUT"] = str(scan_path)
+                if self.config.prompt_mass_scan_layers:
+                    env_overrides["GUARDRAIL_SCAN_LAYERS"] = self.config.prompt_mass_scan_layers
+                if self.config.prompt_mass_scan_stride is not None:
+                    env_overrides["GUARDRAIL_SCAN_STRIDE"] = str(self.config.prompt_mass_scan_stride)
             try:
                 output: TtsCliOutput = engine.tts(
                     TtsCliInput(text=inp.text, output_path=audio_path),
                     sample_args,
-                    env_overrides={"GUARDRAIL_TRAJECTORY_OUT": str(traj_path)},
+                    env_overrides=env_overrides,
                 )
                 duration = float(librosa.get_duration(path=str(output.audio_path)))
                 logger.debug("Generated TTS audio: %s (%.2fs)", output.audio_path, duration)
@@ -368,12 +398,20 @@ class ArgmaxOpenSourceSpeechGenerationPipeline(Pipeline):
                         traj_path.unlink(missing_ok=True)
                 except Exception as traj_err:  # noqa: BLE001 - trajectory is best-effort telemetry
                     logger.warning("Could not read guardrail trajectory for %s: %s", inp.audio_name, traj_err)
+                prompt_mass_scan = None
+                try:
+                    if scan_path.exists():
+                        prompt_mass_scan = scan_path.read_text()
+                        scan_path.unlink(missing_ok=True)
+                except Exception as scan_err:  # noqa: BLE001 - scan is best-effort telemetry
+                    logger.warning("Could not read prompt-mass scan for %s: %s", inp.audio_name, scan_err)
                 # SIM yardstick: prefer the explicit held-out target; else the clone prompt.
                 return GeneratedAudio(
                     audio_path=str(output.audio_path),
                     duration=duration,
                     reference_audio_path=inp.sim_audio or inp.ref_audio,
                     trajectory=trajectory,
+                    prompt_mass_scan=prompt_mass_scan,
                 )
             except Exception:
                 # Clean up partial output so the temp dir doesn't grow across retries.

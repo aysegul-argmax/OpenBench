@@ -123,6 +123,8 @@ class SpeechGenerationResultSink:
                 # Guardrail trajectory JSONL dumped by the CLI (one JSON object per
                 # chunk); empty string when the run had no trajectory output.
                 "trajectory": Value("string"),
+                # Multi-layer prompt-mass head scan JSONL (optional; empty when off).
+                "prompt_mass_scan": Value("string"),
                 # Constant per-run columns (multi-arm sweeps: e.g. seed, guardrails).
                 **{k: Value("string") for k in self.extra_columns},
             }
