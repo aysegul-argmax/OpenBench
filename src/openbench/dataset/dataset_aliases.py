@@ -916,6 +916,32 @@ def register_dataset_aliases() -> None:
             description=f"Single FPR-calib sample {_pmc_sid} (Studio per-seed observe-id).",
         )
 
+    # Paper-ACI reproducibility set: 5 annotated-swap bad clips from the 10+10
+    # listening set, regenerated at paper stack (QwenTTSKit-research@1182871,
+    # guardrails=aci, unchunked, max_ref=120). One-sample aliases for per-seed
+    # Studio jobs → argmaxinc/swift-0.6b-paper-aci-repro-5.
+    for _parepro_alias, _parepro_sid in (
+        # 3 clips with 2+ annotated swaps
+        ("parepro-01", "en_CA_Agriculture_1586885_channel1-ref01"),
+        ("parepro-02", "en_US_General_Banking_1586157_channel1-ref01"),
+        ("parepro-03", "en_US_Southern_Aviation_1587816_channel1-ref07"),
+        # 1 with short swaps (sub-second / brief windows)
+        ("parepro-04", "en_US_Southern_DeliveryService_1593143_channel1-ref01"),
+        # 1 with a single longish swap (~41 s)
+        ("parepro-05", "en_US_General_DeliveryService_1587920_channel1-ref04"),
+    ):
+        DatasetRegistry.register_alias(
+            _parepro_alias,
+            DatasetConfig(
+                dataset_id="argmaxinc/reflen-sim-eval",
+                subset="default",
+                split="train",
+                include_sample_ids=frozenset({_parepro_sid}),
+            ),
+            supported_pipeline_types={PipelineType.SPEECH_GENERATION},
+            description=f"Paper-ACI repro sample {_parepro_sid} (Studio per-seed).",
+        )
+
     # Prompt-length SIM study, hosted variant: argmaxinc/promptlen-sim-eval.
     # Fixed-length same-speaker references (30-96 s), synthesis texts swept by
     # length (`prompt_length` 22-1013 chars). Same flat voiceclone-eval schema
